@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graficador Interactivo</title>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.5.4/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <style>
+        /* Estilo global */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px;
+            font-size: 1.8rem;
+        }
+
+        .contenedor {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            width: 100%; /* Se adapta al ancho del contenedor */
+            max-height: 400px; /* Altura máxima para pantallas pequeñas */
+        }
+
+        @media (min-width: 768px) {
+            h1 {
+                font-size: 2.4rem;
+            }
+
+            canvas {
+                max-height: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Graficador de Coeficientes</h1>
+    <div class="contenedor">
+        <canvas id="grafico"></canvas>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:3000', {
+            reconnection: true,             // Habilitar reconexión automática
+            reconnectionAttempts: 10,       // Número máximo de intentos de reconexión
+            reconnectionDelay: 2000,        // Tiempo de espera entre intentos (en ms)
+            timeout: 5000,                  // Tiempo de espera para la conexión inicial (en ms)
+            autoConnect: true               // Conectar automáticamente al instanciar
+        });
+
+        socket.on('connect', () => {
+            console.log('Conectado al servidor.');
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.log('Desconectado del servidor:', reason);
+            if (reason === 'io server disconnect') {
+                // El servidor forzó la desconexión, se requiere reconectar manualmente
+                socket.connect();
+            }
+        });
+
+        socket.on('reconnect_attempt', (attempt) => {
+            console.log(`Intento de reconexión #${attempt}`);
+        });
+
+        socket.on('reconnect_failed', () => {
+            console.log('Todos los intentos de reconexión han fallado.');
+        });
+
+        // Configuración inicial del gráfico
+        const datos = {
+            labels: [],
+            datasets: [{
+                label: 'Coeficientes',
+                data: [],
+                borderColor: 'blue',
+                fill: false,
+                tension: 0.1
+            }, {
+                label: 'Puntos Rosa',
+                data: [],
+                borderColor: 'pink',
+                fill: false,
+                pointBackgroundColor: '#ff1493',
+                pointRadius: 5,
+                showLine: false
+            }]
+        };
+
+        const opciones = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: {
+                    display: false // Oculta las etiquetas del gráfico
+                }
+            }
+        };
+
+        const ctx = document.getElementById('grafico').getContext('2d');
+        const miGrafico = new Chart(ctx, { type: 'line', data: datos, options: opciones });
+
+        // Función para agregar valor al gráfico
+        const agregarValor = (valor, tiempo) => {
+            const ultimoValor = datos.datasets[0].data.length
+                ? datos.datasets[0].data[datos.datasets[0].data.length - 1]
+                : 0;
+
+            let nuevoValor;
+            if (valor >= 2.0 && valor <= 9.99) {
+                nuevoValor = ultimoValor + 1; // +1
+                datos.datasets[1].data.push(null); // Sin punto rosa
+            } else if (valor < 2.0) {
+                nuevoValor = ultimoValor - 1; // -1
+                datos.datasets[1].data.push(null); // Sin punto rosa
+            } else if (valor >= 10.0) {
+                nuevoValor = ultimoValor + 1; // +1
+                datos.datasets[1].data.push(nuevoValor); // Punto rosa
+            }
+
+            datos.labels.push(tiempo);
+            datos.datasets[0].data.push(nuevoValor);
+
+            // Limitar a los últimos 23 puntos
+            if (datos.labels.length > 23) {
+                datos.labels.shift();
+                datos.datasets[0].data.shift();
+                datos.datasets[1].data.shift();
+            }
+
+            // Actualizar gráfico
+            miGrafico.update();
+        };
+
+        // Escuchar datos nuevos desde el servidor
+        socket.on('nuevoDato', (dato) => {
+            console.log('Nuevo coeficiente recibido:', dato);
+            agregarValor(dato.coeficiente, dato.tiempo);
+        });
+
+        // Prevenir recargas no deseadas
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevenir comportamiento predeterminado al presionar Enter
+            }
+        });
+    </script>
+</body>
+</html>
