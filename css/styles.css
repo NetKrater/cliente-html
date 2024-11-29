@@ -1,0 +1,41 @@
+/* Estilo global */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f4f4f9;
+}
+
+h1 {
+    text-align: center;
+    margin: 20px;
+    font-size: 1.8rem;
+}
+
+.contenedor {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+canvas {
+    width: 100%; /* Se adapta al ancho del contenedor */
+    max-height: 400px; /* Altura máxima para pantallas pequeñas */
+}
+
+@media (min-width: 768px) {
+    h1 {
+        font-size: 2.4rem;
+    }
+
+    canvas {
+        max-height: 600px;
+    }
+}
