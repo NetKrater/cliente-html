@@ -1,5 +1,5 @@
 // Configuración del socket
-const socket = io('http://localhost:3000/', {
+const socket = io('https://80b9-190-109-22-226.ngrok-free.app', {
     reconnection: true,             // Habilitar reconexión automática
     reconnectionAttempts: 10,       // Número máximo de intentos de reconexión
     reconnectionDelay: 2000,        // Tiempo de espera entre intentos (en ms)
