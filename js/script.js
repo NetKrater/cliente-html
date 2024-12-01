@@ -85,7 +85,7 @@ const agregarValor = (valor, tiempo) => {
     datos.datasets[0].data.push(nuevoValor);
 
     // Limitar a los últimos 23 puntos
-    if (datos.labels.length > 23) {
+    if (datos.labels.length > 32) {
         datos.labels.shift();
         datos.datasets[0].data.shift();
         datos.datasets[1].data.shift();
